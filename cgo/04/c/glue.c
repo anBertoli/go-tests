@@ -2,75 +2,40 @@
 #include <stdio.h>
 #include <Python.h>
 
+typedef struct CorePosition {
+	long RCID;
+	int Company;
+	unsigned long GranularityID;
+	int Seniority;
+	int StartDate;
+	int EndDate;
+	float Weight;
+	float Multiplicator;
+	float Inflation;
+	float EstimatedUSLogSalary;
+	float FProb;
+	float MProb;
+	float WhiteProb;
+	float BlackProb;
+	float HispanicProb;
+	float NativeProb;
+	float ApiProb;
+	float MultipleProb;
+	int Region;
+	int Country;
+	int State;
+	int Msa;
+	int MappedRole;
+	int Soc6dTitle;
+	int HighestDegree;
+	float GenderR;
+	int Gender;
+	float EthnicityR;
+	int Ethnicity;
+}  CorePosition;
+
 void init_python() {
   Py_Initialize();
-}
-
-PyObject* import_func(char *file_path, char *func_name) {
-    // PyObject *PyImport_ImportModule(const char *name)¶
-    PyObject *module = PyImport_ImportModule(file_path);
-    if (module == NULL) {
-        return NULL;
-    }
-
-    // PyObject *PyObject_GetAttrString(PyObject *o, const char *attr_name)
-    PyObject *func = PyObject_GetAttrString(module, func_name);
-    if (func == NULL) {
-        return NULL;
-    }
-    // Py_DECREF(module);
-    return func;
-}
-
-PyObject *call_my_func(PyObject* func) {
-    // PyObject *PyObject_CallObject(PyObject *callable, PyObject *args)
-    PyObject *out = PyObject_CallObject(func, NULL);
-    if (out == NULL) {
-        return NULL;
-    }
-
-    return out;
-}
-
-const char *call_my_func_ret_str(char *file_path, char *func_name, char* arg) {
-    PyObject *func = import_func(file_path, func_name);
-    if (func == NULL) {
-        printf("import_func error\n");
-        return 0;
-    }
-
-    // build function args and call function
-    PyObject *args = PyTuple_New(1);
-    // PyObject *PyUnicode_FromStringAndSize(const char *u, Py_ssize_t size)
-    PyObject * ss = PyUnicode_FromStringAndSize(arg, strlen(arg));
-    PyTuple_SetItem(args, 0, ss);
-    // PyObject *PyObject_CallObject(PyObject *callable, PyObject *args)
-    PyObject *out = PyObject_CallObject(func, args);
-    if (out == NULL) {
-        return NULL;
-    }
-
-    //int PyUnicode_CheckExact(PyObject *o)¶
-    if (PyUnicode_CheckExact(out) != 1) {
-        printf("PyUnicode_CheckExact error\n");
-        return NULL;
-    }
-
-    // PyObject *PyUnicode_AsUTF8String(PyObject *unicode)
-    PyObject *some = PyUnicode_AsUTF8String(out);
-    if (some == NULL) {
-        printf("PyUnicode_AsUTF8String error\n");
-        return NULL;
-    }
-
-    // char *PyBytes_AsString(PyObject *o)¶
-    char* str = PyBytes_AsString(some);
-    if (str == NULL) {
-        printf("PyBytes_AsString error\n");
-        return NULL;
-    }
-
-    return str;
 }
 
 const char *py_last_error() {
@@ -82,34 +47,136 @@ const char *py_last_error() {
   PyObject *str = PyObject_Str(err);
   const char *utf8 = PyUnicode_AsUTF8(str);
   Py_DECREF(str);
+  PyErr_Print();
   return utf8;
 }
 
-long call_my_func_ret_num(char *file_path, char *func_name) {
-    PyObject *func = import_func(file_path, func_name);
-    if (func == NULL) {
-        printf("import_func error\n");
-        return 0;
-    }
 
-    // PyObject *PyObject_CallObject(PyObject *callable, PyObject *args)
-    PyObject *out = PyObject_CallObject(func, NULL);
+PyObject *call_func_inner(PyObject *func, CorePosition *row) {
+    PyObject *py_row = Py_BuildValue(
+    "{s:l,s:i,s:k,s:i,s:i,s:i,s:f,s:f,s:f,s:f,s:f,s:f,s:f,s:f,s:f,s:f,s:f,s:f,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:f,s:i,s:f,s:i}",
+    "RCID",                 row->RCID,
+    "Company",              row->Company,
+    "GranularityID",        row->GranularityID,
+    "Seniority",            row->Seniority,
+    "StartDate",            row->StartDate,
+    "EndDate",              row->EndDate,
+    "Weight",               row->Weight,
+    "Multiplicator",        row->Multiplicator,
+    "Inflation",            row->Inflation,
+    "EstimatedUSLogSalary", row->EstimatedUSLogSalary,
+    "FProb",                row->FProb,
+    "MProb",                row->MProb,
+    "WhiteProb",            row->WhiteProb,
+    "BlackProb",            row->BlackProb,
+    "HispanicProb",         row->HispanicProb,
+    "NativeProb",           row->NativeProb,
+    "ApiProb",              row->ApiProb,
+    "MultipleProb",         row->MultipleProb,
+    "Region",               row->Region,
+    "Country",              row->Country,
+    "State",                row->State,
+    "Msa",                  row->Msa,
+    "MappedRole",           row->MappedRole,
+    "Soc6dTitle",           row->Soc6dTitle,
+    "HighestDegree",        row->HighestDegree,
+    "GenderR",              row->GenderR,
+    "Gender",               row->Gender,
+    "EthnicityR",           row->EthnicityR,
+    "Ethnicity",            row->Ethnicity
+    );
+    if (py_row == NULL) {
+        py_last_error();
+        return NULL;
+    }
+    PyObject *args = PyTuple_New(1);
+    PyTuple_SetItem(args, 0, py_row);
+    PyObject *out = PyObject_CallObject(func, args);
     if (out == NULL) {
-        return 0;
+        return NULL;
     }
-
-    //int PyUnicode_CheckExact(PyObject *o)¶
-    if (PyLong_Check(out) != 1) {
-        printf("PyLong_Check error\n");
-        return 0;
-    }
-
-    // long PyLong_AsLong(PyObject *obj)
-    long num = PyLong_AsLong(out);
-    if (num == -1) {
-        return 0;
-    }
-
-    return num;
+    return out;
 }
 
+
+PyThreadState * save_thread() {
+    PyThreadState *threadState = PyEval_SaveThread();
+    return threadState;
+}
+
+void restore_thread(PyThreadState *threadState) {
+    PyEval_RestoreThread(threadState);
+}
+
+CorePosition *py_process(const char *fn, CorePosition *positions, int n_pos) {
+    PyGILState_STATE gstate;
+    gstate = PyGILState_Ensure();
+
+
+    PyObject *pGlobal = PyDict_New();
+    PyObject *pLocal = PyDict_New();
+    printf("dicts: %p %p\n", pLocal, pGlobal);
+
+    // Evaluate function
+    PyObject *pValue = PyRun_String(fn, Py_file_input, pGlobal, pLocal);
+    if (pValue == NULL) {
+        printf("PyRun_String error\n");
+        PyErr_Print();
+        return NULL;
+    }
+
+
+    // Extract function from scope
+    PyObject *key, *value;
+    Py_ssize_t pos = 0;
+    PyObject *func = NULL;
+    while (PyDict_Next(pLocal, &pos, &key, &value)) {
+        PyObject *some = PyUnicode_AsUTF8String(key);
+        if (some == NULL) {
+            printf("PyUnicode_AsUTF8String error\n");
+            PyErr_Print();
+            return NULL;
+        }
+        char* str = PyBytes_AsString(some);
+        if (str == NULL) {
+            printf("PyBytes_AsString error\n");
+            PyErr_Print();
+            return NULL;
+        }
+
+        printf("KEY: %s\n", str);
+        printf("VAL is def: %d\n", PyFunction_Check(value));
+        if (PyFunction_Check(value)) {
+            func = value;
+        } else {
+            printf("PyFunction_Check error\n");
+            PyErr_Print();
+            return NULL;
+        }
+    }
+
+    // Call func
+    CorePosition *processed_poss = malloc(sizeof(CorePosition) * n_pos);
+    if (processed_poss == NULL) {
+        printf("malloc error\n");
+        PyErr_Print();
+        return NULL;
+    }
+    for (int i = 0; i < n_pos; i++) {
+        PyObject *ret = call_func_inner(func, &positions[i]);
+        if (ret == NULL) {
+            printf("call_func_inner error\n");
+            PyErr_Print();
+            return NULL;
+        }
+        // TODO: map back also other fields + add error checks
+        processed_poss[i] = (CorePosition){0};
+        processed_poss[i].RCID = PyLong_AsLong(PyDict_GetItemString(ret, "RCID"));
+        processed_poss[i].Weight = PyFloat_AsDouble(PyDict_GetItemString(ret, "Weight"));
+    }
+
+    PyGILState_Release(gstate);
+
+//    Py_FinalizeEx();
+    return processed_poss;
+}
